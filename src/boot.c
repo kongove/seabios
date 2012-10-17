@@ -273,7 +273,8 @@ boot_setup(void)
  ****************************************************************/
 
 struct bootentry_s {
-    int type;
+    short type;
+    short class;
     union {
         u32 data;
         struct segoff_s vector;
@@ -293,7 +294,7 @@ static struct bootentry_s *BootList;
 #define IPL_TYPE_BCV         0x81
 
 static void
-bootentry_add(int type, int prio, u32 data, const char *desc)
+bootentry_add(int type, int class, int prio, u32 data, const char *desc)
 {
     if (! CONFIG_BOOT)
         return;
@@ -303,6 +304,7 @@ bootentry_add(int type, int prio, u32 data, const char *desc)
         return;
     }
     be->type = type;
+    be->class = class;
     be->priority = prio;
     be->data = data;
     be->description = desc ?: "?";
@@ -338,9 +340,9 @@ static inline int defPrio(int priority, int defaultprio) {
 
 // Add a BEV vector for a given pnp compatible option rom.
 void
-boot_add_bev(u16 seg, u16 bev, u16 desc, int prio)
+boot_add_bev(u16 seg, u16 bev, u16 desc, u16 class, int prio)
 {
-    bootentry_add(IPL_TYPE_BEV, defPrio(prio, DefaultBEVPrio)
+    bootentry_add(IPL_TYPE_BEV, class, defPrio(prio, DefaultBEVPrio)
                   , SEGOFF(seg, bev).segoff
                   , desc ? MAKE_FLATPTR(seg, desc) : "Unknown");
     DefaultBEVPrio = DEFAULT_PRIO;
@@ -358,29 +360,30 @@ boot_add_bcv(u16 seg, u16 ip, u16 desc, int prio)
 void
 boot_add_floppy(struct drive_s *drive_g, const char *desc, int prio)
 {
-    bootentry_add(IPL_TYPE_FLOPPY, defPrio(prio, DefaultFloppyPrio)
-                  , (u32)drive_g, desc);
+    bootentry_add(IPL_TYPE_FLOPPY, PCI_BASE_CLASS_STORAGE
+                  , defPrio(prio, DefaultFloppyPrio), (u32)drive_g, desc);
 }
 
 void
 boot_add_hd(struct drive_s *drive_g, const char *desc, int prio)
 {
-    bootentry_add(IPL_TYPE_HARDDISK, defPrio(prio, DefaultHDPrio)
-                  , (u32)drive_g, desc);
+    bootentry_add(IPL_TYPE_HARDDISK, PCI_BASE_CLASS_STORAGE
+                  , defPrio(prio, DefaultHDPrio), (u32)drive_g, desc);
 }
 
 void
 boot_add_cd(struct drive_s *drive_g, const char *desc, int prio)
 {
-    bootentry_add(IPL_TYPE_CDROM, defPrio(prio, DefaultCDPrio)
-                  , (u32)drive_g, desc);
+    bootentry_add(IPL_TYPE_CDROM, PCI_BASE_CLASS_STORAGE
+                  , defPrio(prio, DefaultCDPrio), (u32)drive_g, desc);
 }
 
 // Add a CBFS payload entry
 void
 boot_add_cbfs(void *data, const char *desc, int prio)
 {
-    bootentry_add(IPL_TYPE_CBFS, defPrio(prio, DEFAULT_PRIO), (u32)data, desc);
+    bootentry_add(IPL_TYPE_CBFS, PCI_BASE_CLASS_OTHER
+                  , defPrio(prio, DEFAULT_PRIO), (u32)data, desc);
 }
 
 

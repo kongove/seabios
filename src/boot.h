@@ -4,8 +4,8 @@
 
 // boot.c
 void boot_setup(void);
-void boot_add_bev(u16 seg, u16 bev, u16 desc, int prio);
-void boot_add_bcv(u16 seg, u16 ip, u16 desc, int prio);
+void boot_add_bev(u16 seg, u16 bev, u16 desc, u16 class, int prio);
+void boot_add_bcv(u16 seg, u16 ip, u16 desc, u16 class, int prio);
 struct drive_s;
 void boot_add_floppy(struct drive_s *drive_g, const char *desc, int prio);
 void boot_add_hd(struct drive_s *drive_g, const char *desc, int prio);
