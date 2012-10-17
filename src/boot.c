@@ -394,6 +394,28 @@ boot_add_cbfs(void *data, const char *desc, int prio)
 #define DEFAULT_BOOTMENU_WAIT 2500
 
 static void
+interactive_bootmenu_network(void)
+{
+    struct bootentry_s **pprev = &BootList, **pprev_new = &BootList;
+
+    /* Wait for HW initialization now so that any later bootentry_add
+     * shall not override this order.
+     */
+    wait_threads();
+    while ((pos = *pprev) != NULL) {
+        if ((pos->type & IPL_TYPE_CLASS) == PCI_BASE_CLASS_NETWORK) {
+            *pprev = pos->next;
+            pos->next = *pprev_new;
+            *pprev_new = pos;
+            pos->priority = 0;
+            pprev_new = &pos->next;
+        } else {
+            pprev = &pos->next;
+        }
+    }
+}
+
+static void
 interactive_bootmenu_select(void)
 {
     printf("Select boot device:\n\n");
@@ -446,13 +468,29 @@ interactive_bootmenu(void)
     while (get_keystroke(0) >= 0)
         ;
 
-    printf("Press F12 for boot menu.\n\n");
+    struct bootentry_s *pos;
+    for (pos = BootList; pos; pos = pos->next) {
+        if (pos->class == PCI_BASE_CLASS_NETWORK)
+            break;
+    }
+
+    printf("Press %sF12 for boot menu.\n\n"
+           , pos ? "F11 for network boot, or " : "");
 
     u32 menutime = romfile_loadint("etc/boot-menu-wait", DEFAULT_BOOTMENU_WAIT);
     enable_bootsplash();
     int scan_code = get_keystroke(menutime);
     disable_bootsplash();
     switch (scan_code) {
+    case 0x85: { // F11
+        // Prioritize BEV/BCV entries
+        if (!pos)
+            return;
+
+        interactive_bootmenu_network();
+        break;
+    }
+
     case 0x86: { // F12
         interactive_bootmenu_select();
         break;
