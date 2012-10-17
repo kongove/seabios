@@ -458,8 +458,12 @@ interactive_bootmenu(void)
         break;
 
     default:
-        break;
+        return;
     }
+
+    while (get_keystroke(0) >= 0)
+        ;
+
 }
 
 // BEV (Boot Execution Vector) list
