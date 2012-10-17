@@ -393,6 +393,49 @@ boot_add_cbfs(void *data, const char *desc, int prio)
 
 #define DEFAULT_BOOTMENU_WAIT 2500
 
+static void
+interactive_bootmenu_select(void)
+{
+    printf("Select boot device:\n\n");
+    wait_threads();
+
+    // Show menu items
+    struct bootentry_s *pos = BootList;
+    int maxmenu = 0;
+    while (pos) {
+        char desc[60];
+        maxmenu++;
+        printf("%d. %s\n", maxmenu
+               , strtcpy(desc, pos->description, ARRAY_SIZE(desc)));
+        pos = pos->next;
+    }
+
+    // Get key press
+    while (get_keystroke(0) >= 0)
+        ;
+
+    for (;;) {
+        scan_code = get_keystroke(1000);
+        if (scan_code >= 1 && scan_code <= maxmenu+1)
+            break;
+    }
+    printf("\n");
+    if (scan_code == 0x01)
+        // ESC
+        break;
+
+    // Find entry and make top priority.
+    int choice = scan_code - 1;
+    struct bootentry_s **pprev = &BootList;
+    while (--choice)
+        pprev = &(*pprev)->next;
+    pos = *pprev;
+    *pprev = pos->next;
+    pos->next = BootList;
+    BootList = pos;
+    pos->priority = 0;
+}
+
 // Show IPL option menu.
 static void
 interactive_bootmenu(void)
@@ -409,48 +452,14 @@ interactive_bootmenu(void)
     enable_bootsplash();
     int scan_code = get_keystroke(menutime);
     disable_bootsplash();
-    if (scan_code != 0x86)
-        /* not F12 */
-        return;
+    switch (scan_code) {
+    case 0x86: { // F12
+        interactive_bootmenu_select();
+        break;
 
-    while (get_keystroke(0) >= 0)
-        ;
-
-    printf("Select boot device:\n\n");
-    wait_threads();
-
-    // Show menu items
-    struct bootentry_s *pos = BootList;
-    int maxmenu = 0;
-    while (pos) {
-        char desc[60];
-        maxmenu++;
-        printf("%d. %s\n", maxmenu
-               , strtcpy(desc, pos->description, ARRAY_SIZE(desc)));
-        pos = pos->next;
+    default:
+        break;
     }
-
-    // Get key press
-    for (;;) {
-        scan_code = get_keystroke(1000);
-        if (scan_code >= 1 && scan_code <= maxmenu+1)
-            break;
-    }
-    printf("\n");
-    if (scan_code == 0x01)
-        // ESC
-        return;
-
-    // Find entry and make top priority.
-    int choice = scan_code - 1;
-    struct bootentry_s **pprev = &BootList;
-    while (--choice)
-        pprev = &(*pprev)->next;
-    pos = *pprev;
-    *pprev = pos->next;
-    pos->next = BootList;
-    BootList = pos;
-    pos->priority = 0;
 }
 
 // BEV (Boot Execution Vector) list
