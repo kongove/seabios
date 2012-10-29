@@ -129,6 +129,9 @@ smbios_init_type_0(void *start)
         p->bios_characteristics_extension_bytes[0] = 0;
         /* Enable targeted content distribution. Needed for SVVP */
         p->bios_characteristics_extension_bytes[1] = 4;
+        /* Network boot key.  */
+        if (show_bootmenu())
+            p->bios_characteristics_extension_bytes[1] |= 2;
     }
 
     set_field_with_default(0, system_bios_major_release, 1);

@@ -458,11 +458,17 @@ interactive_bootmenu_select(void)
     pos->priority = 0;
 }
 
+bool
+show_bootmenu(void)
+{
+    return CONFIG_BOOTMENU && qemu_cfg_show_boot_menu();
+}
+
 // Show IPL option menu.
 static void
 interactive_bootmenu(void)
 {
-    if (! CONFIG_BOOTMENU || ! qemu_cfg_show_boot_menu())
+    if (! show_boot_menu())
         return;
 
     while (get_keystroke(0) >= 0)

@@ -4,6 +4,7 @@
 
 // boot.c
 void boot_setup(void);
+bool show_bootmenu(void);
 void boot_add_bev(u16 seg, u16 bev, u16 desc, u16 class, int prio);
 void boot_add_bcv(u16 seg, u16 ip, u16 desc, u16 class, int prio);
 struct drive_s;
