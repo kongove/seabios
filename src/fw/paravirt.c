@@ -170,6 +170,8 @@ qemu_platform_setup(void)
 #define QEMU_CFG_IRQ0_OVERRIDE          (QEMU_CFG_ARCH_LOCAL + 2)
 #define QEMU_CFG_E820_TABLE             (QEMU_CFG_ARCH_LOCAL + 3)
 
+#define QEMU_CFG_USER_TABLE             (QEMU_CFG_ARCH_LOCAL + 5)
+
 static void
 qemu_cfg_select(u16 f)
 {
@@ -231,6 +233,13 @@ qemu_romfile_add(char *name, int select, int skip, int size)
     romfile_add(&qfile->file);
 }
 
+#define USER_NR_ENTRIES 16
+
+struct user_entry {
+    char name[20];
+    u32 age;
+};
+
 struct e820_reservation {
     u64 address;
     u64 length;
@@ -246,6 +255,24 @@ struct qemu_smbios_header {
     u8 tabletype;
     u16 fieldoffset;
 } PACKED;
+
+static void
+qemu_cfg_user(void)
+{
+    u32 count32;
+
+    qemu_cfg_read_entry(&count32, QEMU_CFG_USER_TABLE, sizeof(count32));
+    dprintf(1, "\n----------- user table[%u]----------\n", count32);
+    if (count32) {
+        struct user_entry entry;
+        int i;
+        for (i = 0; i < count32; i++) {
+            qemu_cfg_read(&entry, sizeof(entry));
+            dprintf(1, "[%d]: name: %s | age: %u\n", i, entry.name, entry.age);
+        }
+    }
+    dprintf(1, "\n------------ end table[%u]----------\n", count32);
+}
 
 static void
 qemu_cfg_e820(void)
@@ -415,4 +442,5 @@ void qemu_cfg_init(void)
     }
 
     qemu_cfg_e820();
+    qemu_cfg_user();
 }
